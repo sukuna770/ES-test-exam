@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Quiz</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        .quiz-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .question {
+            margin-bottom: 20px;
+        }
+        .options {
+            margin: 10px 0;
+        }
+        .options label {
+            display: block;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .options label:hover {
+            background-color: #e0e0e0;
+        }
+        .feedback {
+            font-weight: bold;
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .correct {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .wrong {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .next-button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        .next-button:hover {
+            background-color: #0056b3;
+        }
+        .timer {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .mode-button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        .mode-button:hover {
+            background-color: #218838;
+        }
+        .mode-button.exam {
+            background-color: #dc3545;
+        }
+        .mode-button.exam:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="quiz-container">
+        <h1>Interactive Quiz</h1>
+        <button id="trainingModeButton" class="mode-button" onclick="startTrainingMode()">Training Mode</button>
+        <button id="examModeButton" class="mode-button exam" onclick="startExamMode()">Exam Mode (50 Questions, 1 Hour)</button>
+        <div id="timer" class="timer" style="display:none;">Time Left: 60:00</div>
+        <div id="quizContent">
+            <!-- Questions will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                question: "What function does previous screenshot represent?",
+                options: ["a. This is a Pivot Table Chart.", "b. This is a Pivot Table Filter.", "c. This is a Pivot Table Report.", "d. This is a Pivot Table."],
+                correctAnswer: "d"
+            },
+            {
+                question: "List Formulas in the Fields, Items and Sets Tab in Pivot Table Analyze allows you to:",
+                options: ["a. Report the formulas used in the calculated fields and items in a separate worksheet.", "b. Calculate the fields and items in a separate sheet.", "c. Show the formulas used in the calculated fields and items in the current worksheet.", "d. None of these."],
+                correctAnswer: "c"
+            },
+            {
+                question: "The below screenshot represents a dialog box that shows:",
+                options: ["a. How to calculate or modify a field (HI) form different fields.", "b. How to calculate or modify a field (HI') by sum function of second half of year.", "c. How to calculate or modify an item (HI) by sum function of first half of year.", "d. None of above."],
+                correctAnswer: "c"
+            },
+            // Add more questions here following the same format
+        ];
+
+        let currentQuestionIndex = 0;
+        let examQuestions = [];
+        let examTimer;
+        let timeLeft = 3600; // 60 minutes in seconds
+        let isExamMode = false;
+
+        function startTrainingMode() {
+            isExamMode = false;
+            document.getElementById("trainingModeButton").style.display = "none";
+            document.getElementById("examModeButton").style.display = "none";
+            document.getElementById("timer").style.display = "none";
+            currentQuestionIndex = 0;
+            displayQuestion();
+        }
+
+        function startExamMode() {
+            isExamMode = true;
+            document.getElementById("trainingModeButton").style.display = "none";
+            document.getElementById("examModeButton").style.display = "none";
+            document.getElementById("timer").style.display = "block";
+            examQuestions = getRandomQuestions(50);
+            currentQuestionIndex = 0;
+            displayQuestion();
+            startTimer();
+        }
+
+        function getRandomQuestions(num) {
+            const shuffled = questions.sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, num);
+        }
+
+        function displayQuestion() {
+            const quizContent = document.getElementById("quizContent");
+            const question = isExamMode ? examQuestions[currentQuestionIndex] : questions[currentQuestionIndex];
+            quizContent.innerHTML = `
+                <div class="question">
+                    <p>${question.question}</p>
+                    <div class="options">
+                        ${question.options.map(option => `
+                            <label>
+                                <input type="radio" name="answer" value="${option.charAt(0)}">
+                                ${option}
+                            </label>
+                        `).join('')}
+                    </div>
+                    <div id="feedback" class="feedback"></div>
+                </div>
+            `;
+
+            const options = document.querySelectorAll('.options input');
+            options.forEach(option => {
+                option.addEventListener('change', checkAnswer);
+            });
+        }
+
+        function checkAnswer() {
+            const selectedAnswer = document.querySelector('input[name="answer"]:checked').value;
+            const correctAnswer = isExamMode ? examQuestions[currentQuestionIndex].correctAnswer : questions[currentQuestionIndex].correctAnswer;
+            const feedback = document.getElementById("feedback");
+
+            if (selectedAnswer === correctAnswer) {
+                feedback.innerText = "Correct!";
+                feedback.className = "feedback correct";
+            } else {
+                feedback.innerText = `Wrong! The correct answer is ${correctAnswer}.`;
+                feedback.className = "feedback wrong";
+            }
+
+            if (isExamMode) {
+                setTimeout(nextQuestion, 1500); // Move to the next question after 1.5 seconds
+            }
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < (isExamMode ? examQuestions.length : questions.length)) {
+                displayQuestion();
+            } else {
+                endExam();
+            }
+        }
+
+        function startTimer() {
+            examTimer = setInterval(() => {
+                timeLeft--;
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                document.getElementById("timer").innerText = `Time Left: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+                if (timeLeft <= 0) {
+                    endExam();
+                }
+            }, 1000);
+        }
+
+        function endExam() {
+            clearInterval(examTimer);
+            document.getElementById("quizContent").innerHTML = "<p>Exam completed! Thank you for participating.</p>";
+            document.getElementById("timer").style.display = "none";
+        }
+    </script>
+</body>
+</html>
